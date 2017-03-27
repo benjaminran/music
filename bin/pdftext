@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+_src="$(cd "$(dirname "${BASH_SOURCE[0]}" )" && pwd)"
+source ${_src}/lib.sh
+
+function help {
+         cat <<EOF
+Usage: $(basename $0) [-h] file.pdf...
+
+EOF
+         exit 0
+}
+
+function check_pdf {
+    pdf="$1"
+    [[ -f "${pdf}" ]] || FATAL "${pdf}: file does not exist" && return 1
+    [[ $(identify "${pdf}" | cut -d' ' -f 2 | grep -v PDF | wc -l) -gt 0 ]] || FATAL "${pdf}: not a pdf" && return 1
+    return 0
+}
+
+function main {
+    LOG_LEVEL_WARN
+    while getopts ":hv" opt; do
+        case $opt in
+            h)
+                help
+                ;;
+            v)
+                LOG_LEVEL_ALL
+                set -x
+                ;;
+            \?)
+                echo "Invalid option: -$OPTARG" >&2
+                ;;
+        esac
+    done
+    shift $((OPTIND-1))
+
+    for f in "$@"; do
+        check_pdf "$f"
+        id=$(basename "$f")
+        tmp=$(mktemp -d)
+    
+        convert -density 300 "$f" -depth 8 -strip -background white -alpha off "${tmp}/${id}.tiff"
+        tesseract "${tmp}/${id}.tiff" "${tmp}/${id}"
+    done
+}
+
+[[ "${BASH_SOURCE[0]}" = "${0}" ]] && main "$@"
