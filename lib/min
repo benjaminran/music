@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+if [[ $# -ne 0 ]]; then cat >&2 <<EOF
+Usage: $(basename $0)
+
+A sequence of numbers is read from stdin. The minimum value is printed to stdout
+EOF
+fi
+
+read -r min
+while read -r x; do
+    [[ $x -gt $min ]] || min=$x
+done
+
+echo $min
